@@ -43,6 +43,18 @@ class VSphereClient:
             self.is_authenticated = False
             return None
     
+    def get_clusters(self) -> dict:
+        """Get Clusters."""
+        return self.session.get(f"{self.vsphere_uri}/rest/vcenter/cluster").json()
+    
+    def get_vm(self, vm_id):
+        response = self.session.get(f"{self.vsphere_uri}/rest/vcenter/vm/{vm_id}")
+        if response.status_code == 200:
+            return response.json(), response.headers
+        else:
+            LOGGER.error("Failed to retrieve VM id %s. Status code: %s", vm_id, response.status_code)
+            return None
+    
     def get_vms(self):
         response = self.session.get(f"{self.vsphere_uri}/rest/vcenter/vm")
         if response.status_code == 200:
@@ -51,6 +63,26 @@ class VSphereClient:
             LOGGER.error("Failed to retrieve VMs. Status code: %s", response.status_code)
             return None
     
+    def get_vm_guest_os(self, vm_id):
+        response = self.session.get(f"{self.vsphere_uri}/rest/vcenter/vm/{vm_id}/guest/identity")
+        if response.status_code == 200:
+            return response.json()["value"]#["full_name"]["default_message"]
+        else:
+            LOGGER.error("Failed to retrieve guest OS of %s. Status code: %s", vm_id, response.status_code)
+            return None
+    
+    def get_vms_from_cluster(self, cluster: str) -> dict:
+        """Get VMs."""
+        return self.session.get(f"{self.vsphere_uri}/rest/vcenter/vm?filter.clusters={cluster}").json()
+    
+    def get_vpshere_version(self):
+        response = self.session.get(f"{self.vsphere_uri}/rest/appliance/system/version")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            LOGGER.error("Failed to retrieve version. Status code: %s", response.status_code)
+            return None
+        
 # Example usage
 if __name__ == "__main__":
     vsphere_uri = os.getenv("VSPHERE_URI")
