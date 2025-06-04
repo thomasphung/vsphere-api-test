@@ -37,6 +37,7 @@ class VSphereClient:
             # self.session.headers.update({"vmware-api-session-id": session_token})
             LOGGER.debug("Authentication successful.")
             self.is_authenticated = True
+            return response.headers
         else:
             LOGGER.error("Failed to authenticate. Status code: %s", response.status_code)
             self.is_authenticated = False
@@ -56,6 +57,6 @@ if __name__ == "__main__":
     password = os.getenv("VSPHERE_PASSWORD")
     
     client = VSphereClient(vsphere_uri, username, password, verify_ssl=False)
-    client._authenticate()
+    print(client._authenticate())
     vm_list = client.get_vms()
     print(vm_list)
