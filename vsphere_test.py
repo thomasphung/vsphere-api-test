@@ -33,8 +33,8 @@ class VSphereClient:
     def _authenticate(self):
         response = self.session.post(f"{self.vsphere_uri}/rest/com/vmware/cis/session", auth=self.auth)
         if response.status_code == 200:
-            session_token = response.json()["value"]
-            self.session.headers.update({"vmware-api-session-id": session_token})
+            # session_token = response.json()["value"]
+            # self.session.headers.update({"vmware-api-session-id": session_token})
             LOGGER.debug("Authentication successful.")
             self.is_authenticated = True
         else:
