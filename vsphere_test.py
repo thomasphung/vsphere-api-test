@@ -41,6 +41,7 @@ class VSphereClient:
         else:
             LOGGER.error("Failed to authenticate. Status code: %s", response.status_code)
             self.is_authenticated = False
+            return None
     
     def get_vms(self):
         response = self.session.get(f"{self.vsphere_uri}/rest/vcenter/vm")
