@@ -4,6 +4,8 @@ import logging
 import os
 import dotenv
 
+from requests.auth import HTTPBasicAuth
+
 # Disable SSL warnings if necessary
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -16,7 +18,7 @@ dotenv.load_dotenv()
 class VSphereClient:
     def __init__(self, vsphere_uri, username, password, verify_ssl=True):
         self.vsphere_uri = vsphere_uri
-        self.auth = (username, password)
+        self.auth = HTTPBasicAuth(username, password)
         self.verify_ssl = verify_ssl
         self.session = self._init_session()
         self.is_authenticated = False
@@ -35,6 +37,7 @@ class VSphereClient:
         if response.status_code == 200:
             # session_token = response.json()["value"]
             # self.session.headers.update({"vmware-api-session-id": session_token})
+            LOGGER.debug(f"Cookie jar: {response.cookies.get_dict()}")
             LOGGER.debug("Authentication successful.")
             self.is_authenticated = True
             return response.headers
@@ -43,6 +46,19 @@ class VSphereClient:
             self.is_authenticated = False
             return None
     
+    def get_datacenters(self):
+        LOGGER.debug(f"Session header: {self.session.headers}")
+        LOGGER.debug(f"Cookie jar before: {self.session.cookies.get_dict()}")
+        response = self.session.get(f"{self.vsphere_uri}/rest/vcenter/datacenter")
+        LOGGER.debug(f"Response header: {response.headers}")
+        LOGGER.debug(f"Cookie jar after: {self.session.cookies.get_dict()}")
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            LOGGER.error("Failed to retrieve VMs. Status code: %s", response.status_code)
+            return None
+        
     def get_clusters(self) -> dict:
         """Get Clusters."""
         return self.session.get(f"{self.vsphere_uri}/rest/vcenter/cluster").json()
@@ -56,7 +72,13 @@ class VSphereClient:
             return None
     
     def get_vms(self):
-        response = self.session.get(f"{self.vsphere_uri}/rest/vcenter/vm")
+        LOGGER.debug(f"Session header: {self.session.headers}")
+        LOGGER.debug(f"Cookie jar before: {self.session.cookies.get_dict()}")
+        # response = self.session.get(f"{self.vsphere_uri}/rest/vcenter/vm")
+        response = self.session.request("GET", f"{self.vsphere_uri}/rest/vcenter/vm")
+        LOGGER.debug(f"Response header: {response.headers}")
+        LOGGER.debug(f"Cookie jar after: {self.session.cookies.get_dict()}")
+
         if response.status_code == 200:
             return response.json()
         else:
@@ -91,5 +113,6 @@ if __name__ == "__main__":
     
     client = VSphereClient(vsphere_uri, username, password, verify_ssl=False)
     print(client._authenticate())
-    vm_list = client.get_vms()
-    print(vm_list)
+    client.get_datacenters()
+    # vm_list = client.get_vms()
+    # print(vm_list)
